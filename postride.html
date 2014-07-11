@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- files to be loaded first -->
+        <link href='https://fonts.googleapis.com/css?family=Just+Me+Again+Down+Here|Open+Sans' rel='stylesheet' type='text/css' />
+        <script type="text/javascript" src="https://www.parsecdn.com/js/parse-1.2.18.min.js"></script>
+        <script src="https://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places"></script>
+        
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <title>RideTogether</title>
+        
+        <link href="CSS/mobile.css" rel="stylesheet" media="handheld,only screen and (max-device-width:480px)" />
+        <link href="CSS/core.css" rel="stylesheet" media="screen" />
+        <link rel="stylesheet" href="Plugins/FontAwesome/css/font-awesome.min.css" />
+        <link rel="stylesheet" href="Plugins/Bootstrap/css/bootstrap.min.css">
+
+        <script type="text/javascript" src="JS/autocomplete.js"></script>
+        <script type='application/javascript' src='JS/fastclick.js'></script>
+        <script type="text/javascript" src="Plugins/Bootstrap/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="JS/timeline.js"></script>
+        <script type="text/javascript" src="JS/parse.js"></script>
+
+        <script type="text/javascript">
+            Parse.initialize("b0jfwJsQkNWPdoKnDgd8KJLufCLWNJpmc5vBTkqr", "X90Jzs3gzKceNOdkFmCle8ZiwsE0HGhyNF4N3Wcj");
+            var Ride = Parse.Object.extend("Ride");
+            var origin;
+            var destination;  
+            var currentUser;
+            var isVerified;
+
+            function enroll(frm){
+              var email = $("input[name=txtEmail]").val();
+              var end = "@u.northwestern.edu";
+              var len = email.length;                 // length of inputted email
+              var len2 = end.length;                  // length of u.northw.....
+              var pos = len - len2;                   // start of slice - the part with @u.....
+              var ending = email.slice(pos, len);     // supposed to be the @u.northw.... ending
+              var name = $("input[name=txtName]").val();
+              var car = $("#cartype").val();
+
+              if (email == "") {
+                alert('Please enter a @u.northwestern.edu email address and try again.');
+              }
+
+              else if (ending != end) {
+                alert('Please enter a @u.northwestern.edu email address and try again.');
+              }
+
+              else if ((frm.txtName.value == "") || (frm.txtOpenSeats.value == "open seats in your car") || (frm.date.value == '') || (frm.txtDurationTime.value == '') || (frm.txtDepartureTime.value=='')) {
+                alert('Required field');
+              }      
+              
+              else {
+                  // autofill forms since the user is already logged in
+                  $("input[name=signup-name]").val(name);
+                  $("input[name=signup-email]").val(email);
+                  $("input[name=UserNameLogin]").val(email);
+                  $("#type2").val(car);
+
+                  console.log(frm.date.value);
+                  var date = new Date(frm.date.value);
+                  
+
+                  var startPoint = new Parse.GeoPoint({
+                                       latitude: parseFloat(frm.txtStartPointLat.value),
+                                       longitude: parseFloat(frm.txtStartPointLng.value)
+                                   });
+                  var endPoint = new Parse.GeoPoint({
+                                     latitude: parseFloat(frm.txtEndPointLat.value),
+                                     longitude: parseFloat(frm.txtEndPointLng.value)
+                                   });
+  
+                  var durationRes, departureRes;
+                  var durationStr = frm.txtDurationTime.value;
+                  var departureStr = frm.txtDepartureTime.value;
+                  var datestr = frm.date.value;
+                  var datevals = datestr.split('-');
+                  var durselect = $("input[name=durselect]:checked").val();
+                  var cost = $("input[name=costtype]:checked").val();
+
+                  durationRes = durationStr.split(":");
+                  departureRes = departureStr.split(":");
+                  
+
+                  if(durselect == 'PM')
+                  {
+                    if(departureRes[0] != 12)
+                    {
+                      departureRes[0] = 12 + Number(departureRes[0]);
+                    }
+                  }
+                  else
+                  {
+                    if(Number(departureRes[0]) == 12)
+                    {
+                      departureRes[0] = 0;
+                    }
+                  }
+                  console.log(departureRes[0]);
+
+                  var new_date = new Date(Number(datevals[0]), Number(datevals[1]) - 1, Number(datevals[2]), departureRes[0], departureRes[1]);
+                  var timestamp = new_date.getTime();
+
+
+                currentUser = Parse.User.current()
+                 isVerified = false;
+                  if (currentUser) {
+                      currentUser.fetch();
+                      isVerified = currentUser.get("emailVerified");
+                      console.log(isVerified)
+                      console.log(currentUser.get('Name'))
+                  }
+                  else{
+                    showPostLogin();
+                  }
+
+                  if (isVerified) {
+                      var rideposter = new Ride();
+                      rideposter.save({ Name: name,
+                                        CarType: car,
+                                        OpenSeats: Number(frm.txtOpenSeats.value),
+                                        TravelTime: frm.txtDepartureTime.value,
+                                        Email: frm.txtEmail.value,
+                                        StartAddress: frm.txtStartAddress.value, 
+                                        StartPoint: startPoint, 
+                                        Destination: frm.txtDestination.value,
+                                        EndPoint: endPoint,
+                                        DepartureTimeHR : Number(departureRes[0]),
+                                        DepartureTimeMin : Number(departureRes[1]),
+                                        DurationTimeHR : Number(durationRes[0]),
+                                        DurationTimeMin : Number(durationRes[1]),
+                                        DepartureAMPM : durselect,
+                                        TimeStamp : timestamp,
+                                        TripCost : frm.tripcost.value,
+                                        CostType : cost,
+                                        Date: date}, {
+                          success: function(rideposter){
+                              console.log("Save succeeded");
+                              alert('Thank you! the ride information is posted');
+                              window.location.replace("rides.html");
+                          },
+                          error: function(rideposter, error){
+                              console.log("Save failed with error: ", error);
+                          }
+                      });
+                  } else {
+                      alert('To continue, please login or register.           Already registered? Please check your email address has been verified. Then, login.');
+                      Parse.User.logOut();
+                      var loginForm = $('#register-form-post');
+                      loginForm.css('display', 'block');
+                  }
+              }
+            }
+
+            window.addEventListener('load', function() {
+                FastClick.attach(document.body);
+            }, false);
+        </script>
+    </head>
+
+    <body class="fancy"> 
+        
+        <!-- HEADER -->
+        <div class="header">
+          <h1>Post Your Ride
+            <span>
+              <a href="index.html" id="back"><i class="fa fa-chevron-left fa-lg"></i></a>
+              <!-- <a href="#" id="menu"><i class="fa fa-bars fa-lg"></i></a> -->
+            </span>
+          </h1>     
+        </div>
+
+        <!-- POST RIDE FORM -->
+        <div class="signup">
+            <form class="form-horizontal" role="form" id="postrideForm">
+                <!-- name -->
+                <div class="form-group">
+                    <label for="name" class="col-sm-2 control-label">Name</label>
+                    <div class="col-sm-10">
+                      <input type="text" class="form-control" id="name" name="txtName" placeholder="Name">
+                    </div>
+                </div>
+
+                <!-- email -->
+                <div class="form-group">
+                    <label for="email" class="col-sm-2 control-label">Email</label>
+                    <div class="col-sm-10">
+                      <input type="email" class="form-control" id="email" name="txtEmail" placeholder="Email">
+                    </div>
+                </div>
+
+                <!-- car type -->
+                <div class="form-group">
+                    <label for="type" class="col-sm-2 control-label">Car Type</label>
+                    <div class="col-sm-10">
+                        <select class="form-control" id="cartype" name="CarType">
+                            <option>size of your car</option>
+                            <option>Sedan</option>
+                            <option>Coupe</option>
+                            <option>SUV</option>
+                            <option>Truck</option>
+                        </select>
+                    </div>  
+                </div>
+
+                <!-- open seats -->
+                <div class="form-group">
+                    <label for="seats" class="col-sm-2 control-label">Open Seats</label>
+                    <div class="col-sm-10">
+                      <select class="form-control" id="seats" name="txtOpenSeats">
+                        <option>open seats in your car</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                      </select>
+                    </div>
+                </div>
+                
+                <!-- start address -->
+                <div class="form-group">
+                    <label for="start" class="col-sm-2 control-label">Start Address</label>
+                    <div class="col-sm-10">
+                      <input type="text" class="form-control" id="start" name="txtStartAddress" placeholder="ex: 2255 Ridge Ave, Plex, Tech, etc">
+                      <input type="hidden" class="form-control" id="startpointlat" name="txtStartPointLat">
+                      <input type="hidden" class="form-control" id="startpointlng" name="txtStartPointLng">
+                    </div>
+                </div>
+
+                <!-- destination -->
+                <div class="form-group">
+                    <label for="end" class="col-sm-2 control-label">Destination</label>
+                    <div class="col-sm-10">
+                      <input type="text" class="form-control" id="end" name="txtDestination" placeholder="ex: O'Hare, Old Orchard, etc">
+                      <input type="hidden" class="form-control" id="endpointlat" name="txtEndPointLat">
+                      <input type="hidden" class="form-control" id="endpointlng" name="txtEndPointLng">
+                    </div>
+                </div>
+
+                <!-- Departure time -->
+                <div class="form-group">
+                    <label for="departuretime" class="col-sm-2 control-label">Departure Time</label>
+                    <div class="col-sm-10">
+                      <input type="text" class="form-control" id="departuretime" name="txtDepartureTime" placeholder="ex: 1:00">
+
+                      <!-- radio buttons -->
+                      <div class="radio radio-inline">
+                        <label>
+                          <input type="radio" name="durselect" id="durselect1" value="AM">
+                          AM
+                        </label>
+                      </div>
+                      <div class="radio radio-inline">
+                        <label>
+                          <input type="radio" name="durselect" id="durselect2" value="PM">
+                          PM
+                        </label>
+                      </div>
+
+                    </div>
+                </div>
+
+                <!-- trip duration -->
+                <div class="form-group">
+                    <label for="durationtime" class="col-sm-2 control-label">Trip Duration</label>
+                    <div class="col-sm-10">
+                      <input type="text" class="form-control" id="durationtime" name="txtDurationTime" placeholder="How long are you going to spend at your destination? ex. 2:30 is 2.5 hrs">
+                    </div>
+                </div>
+
+                <!-- date -->
+                <div class="form-group">
+                    <label for="date" class="col-sm-2 control-label">Trip Date</label>
+                    <div class="col-sm-10">
+                      <input type="date" class="form-control" id="date" name="date" placeholder="Enter trip date">
+                    </div>
+                </div>
+                
+                <!-- cost -->
+                <div class="form-group">
+                    <label for="cost" class="col-sm-2 control-label">Charge ($)</label>
+                    <div class="col-sm-10">
+                      <input type="text" class="form-control" id="cost" name="tripcost" placeholder="ex: $10 flat rate, $2 per mile">
+
+                      <!-- radio buttons -->
+                      <div class="radio radio-inline">
+                        <label>
+                          <input type="radio" name="costtype" id="cost1" value="Flat Rate">Flat Rate
+                        </label>
+                      </div>
+                      <div class="radio radio-inline">
+                        <label>
+                          <input type="radio" name="costtype" id="cost2" value="Per Mile">Per Mile
+                        </label>
+                      </div>
+
+                    </div>
+                </div>
+
+                <!-- submit button -->
+                <div class="form-group" id="submit-post">
+                  <div class="col-sm-offset-2 col-sm-10">
+                    <input type="button" class="btn btn-default" onClick="enroll(this.form)" value="Post it!">
+                  </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- --------- REGISTRATION FORM ------------- -->
+        <div id="register-form-post">
+          <div id="register-form-heading"><h2>You must register to post a ride</h2></div>
+          
+          <form class="form-horizontal" role="form" id="register-form">
+                <!-- name -->
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="name" name="signup-name" placeholder="Name">
+                </div>
+
+                <!-- email -->
+                <div class="col-sm-10">
+                  <input type="email" class="form-control" id="email" name="signup-email" placeholder="Email">
+                </div>
+
+                <!-- password -->
+                <div class="col-sm-10">
+                    <input type="password" class="form-control" id="password" name="Password" placeholder="Password">
+                </div>
+
+                <!-- car type -->
+                <div class="col-sm-10">
+                  <select class="form-control" id="type2" name="signup-CarType">
+                    <option>Car Type</option>
+                    <option>Sedan</option>
+                    <option>Coupe</option>
+                    <option>SUV</option>
+                    <option>Truck</option>
+                  </select>
+                </div>
+  
+                <!-- home address -->
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="home" name="signup-HomeAddress" placeholder="Home Address">
+                </div>
+
+                <!-- alerts -->
+                <div id="alert1" class="alert alert-danger col-sm-10">
+                    <strong>Error:</strong> Please enter a @u.northwestern.edu email address and try again.
+                </div>
+
+                <div id="alert4" class="alert alert-danger col-sm-10">
+                    <strong>Error:</strong> Username/email is already registered 
+                    <ul style="text-align: left; padding-left: 15px; ">
+                        <li><strong>Forgot your password? </strong><a href="#">Click here</a> to send it to your email address</li>
+                        <li><strong>Not your account? </strong>If you have reason to believe an account was falsely created under your name, <a href="#">contact us here</a></li>
+                    </ul>
+                </div>
+
+                <div id="alert5" class="alert alert-danger col-sm-10">
+                    <strong>Error:</strong> Please enter a password
+                </div>
+
+                <!-- form footer -->
+                <div class="col-sm-offset-2 col-sm-10" id="form-buttons">
+                  <div class="btn btn-default btn-sm" onclick="signUp()">Sign Up </div> 
+                  <span>Already registered?</span>
+                  <div  id="register-switch" class="btn btn-default btn-sm" onclick="postRegister()">Login </div>
+                </div>
+          </form>
+
+           <div id="s-alert1" class="alert alert-success col-sm-10">
+              <strong>Success!</strong> To verify your account, please look for an email from "no-reply@parseapps.com" and click the link in the email.
+          </div>
+
+        </div>
+
+        <div id="login-form-post">
+          <h2>You must login to post a ride</h2>
+
+          <form class="form-horizontal" role="form">
+              <!-- Email -->
+              <div class="form-group">
+                  <div class="col-sm-12">
+                      <input type="text" class="form-control" id="usernamelogin" name="UserNameLogin" placeholder="Email">
+                  </div>
+              </div>
+
+              <!-- Password -->
+              <div class="form-group">
+                  <div class="col-sm-12">
+                      <input type="password" class="form-control" id="passwordlogin" name="PasswordLogin"placeholder="Password">
+                  </div>
+              </div>
+
+              <!-- alerts -->
+              <div id="alert6" class="alert alert-danger">
+                <strong>Error:</strong> User's account isn't verified. Please look for an email from "no-reply@parseapps.com" and click the link in the email
+              </div>
+
+              <div id="alert3" class="alert alert-danger">
+                <strong>Error:</strong> Invalid login parameters. Please check that you have registered for an account and that your email address has been verified. Then, try again.
+              </div>
+
+              <!-- Submit buttons -->
+              <div class="form-group" id="submit-post">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <input id="post-login-button" type="button" class="btn btn-default" onclick="postLogin()" value="Login">
+                </div>
+              </div>
+          </form>
+        </div>
+
+    </body>
+</html>
