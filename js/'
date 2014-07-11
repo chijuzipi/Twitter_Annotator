@@ -1,9 +1,7 @@
 Parse.initialize("Jbz8IatuSOpr7xmnNXBpnCcN1cj2ox9sPzsqggak","anMcouVSWbzeHoJmFJBcJYrmg8XtzUatOt7hrgJX");
 
   $(document).ready(function(){
-    
-    $("body").click(function(){
-
+    $("body").mouseup(function(){
       var tweet = $(".js-tweet-text");
       var attr = $(".time");
       if (window.getSelection) {  // IE before version 9 cannot use this function
@@ -16,13 +14,14 @@ Parse.initialize("Jbz8IatuSOpr7xmnNXBpnCcN1cj2ox9sPzsqggak","anMcouVSWbzeHoJmFJB
               var user_name = hrefList[3]; 
               var tweet_id = hrefList[5];
               console.log("tweet id is :",tweet_id, "user name is:", user_name);
-              createHtmlElement(tweet_id, user_name);
-              return;
+              var rect = tweet[i].getBoundingClientRect();
+              console.log(rect.top, rect.right, rect.bottom, rect.left);
+              addButton2();
+              //add("button", tweet[i]);
               //ParseSave(user_name, tweet_id);
             }
           }
       }
-        
     });
   });
 
@@ -41,18 +40,28 @@ Parse.initialize("Jbz8IatuSOpr7xmnNXBpnCcN1cj2ox9sPzsqggak","anMcouVSWbzeHoJmFJB
                         });
    }
 
-  function createHtmlElement(id, name){
-    var div = document.createElement("div");
-    div.setAttribute("id", "common");
-    var tweet_id = document.createTextNode(id);
-    var user_name = document.createTextNode(name);
-    div.appendChild(tweet_id);
-    div.appendChild(user_name);
-    document.body.appendChild(div);
-    div.style.visibility = "hidden";
-    //console.log(document.getElementById("common").childNodes[0]);
-    
-    }
-    
-    
-                     
+  function addButton1(type, node) {
+  //Create an input type dynamically.   
+    var element = document.createElement("input");
+    //Assign different attributes to the element. 
+    element.type = type;
+    element.value = type; // Really? You want the default value to be the type string?
+    element.name = type;  // And the name too?
+    element.onclick = function() { // Note this is a function
+    alert("blabla");
+    };
+    //Append the element in page (in span).  
+    node.appendChild(element);
+
+  }
+
+  function addButton2() {
+    var btn=document.createElement("BUTTON");
+    var t  =document.createTextNode("click me");
+    var d = document.getElementsByTagName("div");
+    d[0].appendChild
+    btn.setAttribute("id", "float");
+    btn.appendChild(t);
+    alert("button crated");
+  }
+                      
