@@ -1,0 +1,21 @@
+{
+  "name": "tweet_text_selector",
+
+  "version": "0.0.9",
+
+  "manifest_version": 2,
+
+  "description": "Inline annotation for the web. Select text, images, or (nearly) anything else, and add your notes.",
+  
+  "browser_action": {
+    "scripts": []
+  },
+
+  "content_scripts": [
+    {
+      "run_at":"document_idle", 
+      "matches": ["http://www.twitter.com/*"],
+      "js": ["lib/jquery-1.11.0.min.js", "js/textSelector.js"]
+    }
+  ] 
+}
