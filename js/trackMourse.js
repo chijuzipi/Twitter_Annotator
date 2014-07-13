@@ -1,4 +1,3 @@
-
 $(document).ready(function(){
   $("body").click(function(){
   var evt = event ? event:window.event;
